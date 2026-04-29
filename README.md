@@ -45,11 +45,8 @@ The system strictly adheres to a normalized database schema to ensure data integ
 4.  **Run the Application:**
     Open your web browser and navigate to: `http://localhost/city-management/`
 
-## 🔑 Default Login Credentials
-
-If you imported the provided SQL file, you can log into the Master Admin account using:
-*   **National ID (NID):** `ADMIN`
-*   **Phone Number:** `admin`
 
 ## 👥 Development Team
-Developed as an academic project by a 3-person engineering team focusing on database normalization, secure PHP architecture, and real-world system design.
+Sadman Rahman
+Oyshi Sarkar
+Nafiul Islam
