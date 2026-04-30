@@ -14,10 +14,11 @@ $error = '';
 $citizen_id = $_SESSION['citizen_id'];
 $role = strtolower($_SESSION['role']);
 $is_admin = ($role === 'admin');
+$is_owner = ($role === 'owner');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$is_admin) {
-        $error = "Only Admins can post announcements.";
+    if (!$is_admin && !$is_owner) {
+        $error = "Only Admins and Owners can post announcements.";
     } else {
         $action = $_POST['action'] ?? '';
 
@@ -26,6 +27,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $description = $_POST['description'];
             $area_code = !empty($_POST['area_code']) ? $_POST['area_code'] : NULL;
             $building_id = !empty($_POST['building_id']) ? $_POST['building_id'] : NULL;
+            
+            if ($is_owner) {
+                // Owner can only post to their own building
+                $stmt = $conn->prepare("SELECT area_code, building_id FROM Citizen WHERE citizen_id = ?");
+                $stmt->bind_param("i", $citizen_id);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res->num_rows > 0) {
+                    $row = $res->fetch_assoc();
+                    $area_code = $row['area_code'];
+                    $building_id = $row['building_id'];
+                }
+            }
+
             $status = 'active';
 
             try {
@@ -42,8 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'delete') {
             $id = $_POST['announcement_id'];
             try {
-                $stmt = $conn->prepare("DELETE FROM Announcement WHERE announcement_id=?");
-                $stmt->bind_param("i", $id);
+                if ($is_admin) {
+                    $stmt = $conn->prepare("DELETE FROM Announcement WHERE announcement_id=?");
+                    $stmt->bind_param("i", $id);
+                } else {
+                    $stmt = $conn->prepare("DELETE FROM Announcement WHERE announcement_id=? AND posted_by=?");
+                    $stmt->bind_param("ii", $id, $citizen_id);
+                }
                 if ($stmt->execute()) {
                     $message = "Announcement deleted successfully.";
                 } else {
@@ -126,7 +146,7 @@ include '../includes/navbar.php';
             <h2>Announcements</h2>
             <p style="color: var(--text-muted); margin-top: 0.5rem;">Important notices and communications.</p>
         </div>
-        <?php if ($is_admin): ?>
+        <?php if ($is_admin || $is_owner): ?>
             <button class="btn" style="width: auto;" onclick="document.getElementById('postModal').style.display='block'">+ Post Announcement</button>
         <?php endif; ?>
     </div>
@@ -163,7 +183,7 @@ include '../includes/navbar.php';
                                 ?>
                             </span>
                         </div>
-                        <?php if ($is_admin): ?>
+                        <?php if ($is_admin || ($is_owner && $ann['posted_by'] == $citizen_id)): ?>
                             <form method="POST" onsubmit="return confirm('Delete this announcement?');">
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="announcement_id" value="<?= $ann['announcement_id'] ?>">
@@ -180,7 +200,7 @@ include '../includes/navbar.php';
     </div>
 </main>
 
-<?php if ($is_admin): ?>
+<?php if ($is_admin || $is_owner): ?>
 <!-- Post Modal -->
 <div id="postModal" class="modal" style="display:none; position:fixed; z-index:1; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.5);">
     <div class="modal-content" style="background-color: var(--card-bg); margin: 5% auto; padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px;">
@@ -191,6 +211,7 @@ include '../includes/navbar.php';
             <div class="form-group" style="margin-bottom: 1rem;"><label>Title</label><input type="text" name="title" required style="width:100%; padding:0.5rem;"></div>
             <div class="form-group" style="margin-bottom: 1rem;"><label>Content</label><textarea name="description" required rows="5" style="width:100%; padding:0.5rem; font-family:inherit;"></textarea></div>
             
+            <?php if ($is_admin): ?>
             <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">Leave both targeting fields blank to post a Global Announcement.</p>
             
             <div class="form-group" style="margin-bottom: 1rem;"><label>Target Area (Optional)</label>
@@ -205,6 +226,9 @@ include '../includes/navbar.php';
                     <?php foreach($buildings as $b): ?><option value="<?= $b['building_id'] ?>">Building #<?= $b['building_id'] ?> (<?= ucfirst($b['type']) ?>)</option><?php endforeach; ?>
                 </select>
             </div>
+            <?php else: ?>
+            <p style="margin-top: 1rem; margin-bottom: 1rem; font-size: 0.95rem; color: var(--text-muted);">Your announcement will be targeted to your building automatically.</p>
+            <?php endif; ?>
             <button type="submit" class="btn">Publish Notice</button>
         </form>
     </div>
