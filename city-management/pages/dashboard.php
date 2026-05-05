@@ -43,25 +43,37 @@ include '../includes/navbar.php';
 <main>
     <div class="dashboard-header">
         <h2>Dashboard</h2>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">Welcome back, <?= htmlspecialchars($_SESSION['role']) ?>!</p>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">Welcome back, <?= htmlspecialchars(ucfirst($_SESSION['role'])) ?>!</p>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div class="card" style="text-align: center;">
-            <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">Total Citizens</h3>
-            <p style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color);"><?= $total_citizens ?></p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="card stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-info">
+                <h3>Total Citizens</h3>
+                <p><?= $total_citizens ?></p>
+            </div>
         </div>
-        <div class="card" style="text-align: center;">
-            <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">City Areas</h3>
-            <p style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color);"><?= $total_areas ?></p>
+        <div class="card stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+            <div class="stat-info">
+                <h3>City Areas</h3>
+                <p><?= $total_areas ?></p>
+            </div>
         </div>
-        <div class="card" style="text-align: center;">
-            <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">Buildings</h3>
-            <p style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color);"><?= $total_buildings ?></p>
+        <div class="card stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-building"></i></div>
+            <div class="stat-info">
+                <h3>Buildings</h3>
+                <p><?= $total_buildings ?></p>
+            </div>
         </div>
-        <div class="card" style="text-align: center;">
-            <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">Crime Reports</h3>
-            <p style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color);"><?= $total_crimes ?></p>
+        <div class="card stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="stat-info">
+                <h3>Crime Reports</h3>
+                <p><?= $total_crimes ?></p>
+            </div>
         </div>
     </div>
 </main>
